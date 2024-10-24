@@ -12,4 +12,5 @@ Rust crate to calculate the difference between 2 instances of the same type
     - Options of types that implement `Diffable`
 - Diff between 2 instances of a struct that implements `Diffable`
     - Implemented manually or with `#[derive(Diff)]`
+    - ⚠️ Currently only structs with named fields are supported
 - Serialize your diffs with `serde` feature flag
