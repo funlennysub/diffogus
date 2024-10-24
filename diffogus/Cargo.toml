@@ -9,6 +9,10 @@ repository.workspace = true
 homepage.workspace = true
 license.workspace = true
 
+[package.metadata.docs.rs]
+features = ["derive"]
+rustdoc-args = ["--cfg", "docsrs"]
+
 [features]
 default = []
 derive = ["diffogus_derive"]

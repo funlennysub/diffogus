@@ -2,7 +2,7 @@
 
 //! # diffogus_derive
 //!
-//! This crate provides a derive macro to help users implement
+//! This crate provides a derive macro to help users implement diffing for their types
 //!
 
 use heck::ToUpperCamelCase;

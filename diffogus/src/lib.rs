@@ -145,6 +145,8 @@
 //! ```
 //!
 
+#![cfg_attr(docsrs, feature(doc_cfg, rustdoc_internals))]
+
 /// Core diffing implementation
 pub mod diff;
 
@@ -152,5 +154,5 @@ pub mod diff;
 extern crate diffogus_derive;
 
 #[cfg(feature = "diffogus_derive")]
-#[cfg_attr(docsrs, doc(cfg(feature = "diffogus_derive")))]
+#[cfg_attr(docsrs, doc(cfg(feature = "derive")))]
 pub use diffogus_derive::Diff;
