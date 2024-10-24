@@ -1,0 +1,13 @@
+[package]
+name = "diffogus"
+version.workspace = true
+edition = "2021"
+
+[features]
+default = []
+derive = ["diffogus_derive"]
+serde = ["dep:serde", "diffogus_derive/serde"]
+
+[dependencies]
+diffogus_derive = { version = "0.1", path = "../diffogus_derive", optional = true }
+serde = { version = "1", features = ["derive"], optional = true }

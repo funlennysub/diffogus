@@ -1,0 +1,14 @@
+[workspace.package]
+authors = ["funlennysub"]
+description = "Rust crate to calculate the difference between 2 instances of a type."
+edition = "2021"
+
+homepage = "https://github.com/funlennysub/diffogus"
+repository = "https://github.com/funlennysub/diffogus"
+
+license = "MIT"
+version = "0.1.0"
+
+[workspace]
+resolver = "2"
+members = ["diffogus", "diffogus_derive"]

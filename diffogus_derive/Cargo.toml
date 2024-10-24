@@ -1,0 +1,19 @@
+[package]
+name = "diffogus_derive"
+version.workspace = true
+edition = "2021"
+
+[lib]
+name = "diffogus_derive"
+path = "src/lib.rs"
+proc-macro = true
+
+[features]
+serde = []
+
+[dependencies]
+syn = { version = "2", default-features = false, features = ["derive", "parsing", "printing", "proc-macro"] }
+structmeta = "0.3"
+quote = "1"
+proc-macro2 = "1"
+heck = "0.5.0"
