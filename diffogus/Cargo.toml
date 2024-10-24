@@ -1,7 +1,13 @@
 [package]
 name = "diffogus"
+description.workspace = true
+documentation = "https://docs.rs/diffogus"
 version.workspace = true
 edition = "2021"
+
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
 
 [features]
 default = []

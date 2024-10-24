@@ -1,7 +1,13 @@
 [package]
 name = "diffogus_derive"
+description.workspace = true
+documentation = "https://docs.rs/diffogus_derive"
 version.workspace = true
 edition = "2021"
+
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
 
 [lib]
 name = "diffogus_derive"
