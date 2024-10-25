@@ -9,6 +9,16 @@ repository.workspace = true
 homepage.workspace = true
 license.workspace = true
 
+[[test]]
+name = "derive"
+path = "tests/derive.rs"
+required-features = ["derive", "serde"]
+
+[[test]]
+name = "serde"
+path = "tests/serde.rs"
+required-features = ["serde"]
+
 [package.metadata.docs.rs]
 features = ["derive"]
 rustdoc-args = ["--cfg", "docsrs"]
@@ -21,3 +31,6 @@ serde = ["dep:serde", "diffogus_derive/serde"]
 [dependencies]
 diffogus_derive = { version = "0.1", path = "../diffogus_derive", optional = true }
 serde = { version = "1", features = ["derive"], optional = true }
+
+[dev-dependencies]
+serde_json = "1"

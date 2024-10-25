@@ -41,6 +41,28 @@ pub enum PrimitiveDiff<T: Diffable> {
     Unchanged,
 }
 
+impl<T> PartialEq for PrimitiveDiff<T>
+where
+    T: Diffable + PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (
+                Self::Changed {
+                    old: l_old,
+                    new: l_new,
+                },
+                Self::Changed {
+                    old: r_old,
+                    new: r_new,
+                },
+            ) => l_old == r_old && l_new == r_new,
+            (Self::Unchanged, Self::Unchanged) => true,
+            _ => false,
+        }
+    }
+}
+
 #[cfg(feature = "serde")]
 impl<T> Serialize for PrimitiveDiff<T>
 where
@@ -143,6 +165,22 @@ pub enum CollectionDiffEntry<T: Diffable> {
     Changed(<T as Diffable>::Repr),
     /// Indicates that an item has not changed.
     Unchanged,
+}
+
+impl<T> PartialEq for CollectionDiffEntry<T>
+where
+    T: Diffable + PartialEq,
+    <T as Diffable>::Repr: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Removed(l), Self::Removed(r)) => l == r,
+            (Self::Added(l), Self::Added(r)) => l == r,
+            (Self::Changed(l), Self::Changed(r)) => l == r,
+            (Self::Unchanged, Self::Unchanged) => true,
+            _ => false,
+        }
+    }
 }
 
 #[cfg(feature = "serde")]
@@ -330,6 +368,22 @@ pub enum OptionDiff<T: Diffable> {
     Changed(<T as Diffable>::Repr),
     /// Indicates that the value has not changed.
     Unchanged,
+}
+
+impl<T> PartialEq for OptionDiff<T>
+where
+    T: Diffable + PartialEq,
+    <T as Diffable>::Repr: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Removed(l), Self::Removed(r)) => l == r,
+            (Self::Added(l), Self::Added(r)) => l == r,
+            (Self::Changed(l), Self::Changed(r)) => l == r,
+            (Self::Unchanged, Self::Unchanged) => true,
+            _ => false,
+        }
+    }
 }
 
 #[cfg(feature = "serde")]
