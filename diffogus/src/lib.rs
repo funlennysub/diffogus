@@ -124,7 +124,7 @@
 //! [dependencies]
 //! diffogus = { version = "0.1", features = ["derive"] }
 //! ```
-//! 
+//!
 //! Example usage:
 //!
 //! ```no_run

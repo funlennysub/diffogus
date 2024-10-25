@@ -108,13 +108,13 @@ mod test {
         assert_eq!(expected.to_string(), diff_str);
 
         let a = hashmap![(0, 1), (1, 2)];
-        let b = hashmap![(0, 1), (1, 2), (2,3)];
+        let b = hashmap![(0, 1), (1, 2), (2, 3)];
         let diff = a.diff(&b);
         let expected = r#"{"2":{"new":3,"type":"added"}}"#;
         let diff_str = serde_json::to_string(&diff).unwrap();
         assert_eq!(expected.to_string(), diff_str);
 
-        let a = hashmap![(0, 1), (1, 2), (2,3)];
+        let a = hashmap![(0, 1), (1, 2), (2, 3)];
         let b = hashmap![(0, 1), (1, 2)];
         let diff = a.diff(&b);
         let expected = r#"{"2":{"old":3,"type":"removed"}}"#;

@@ -129,14 +129,7 @@ mod test {
         assert_eq!(expected.to_string(), diff_str);
 
         let a = Box::new(10.0, 0, vec![Item::new(5.0, "pen".into())], false);
-        let b = Box::new(
-            11.0,
-            4,
-            vec![
-                Item::new(12.0, "remote".into()),
-            ],
-            true,
-        );
+        let b = Box::new(11.0, 4, vec![Item::new(12.0, "remote".into())], true);
         let diff = a.diff(&b);
         let expected = r#"{"volume":{"old":10.0,"new":11.0,"type":"changed"},"color":{"old":0,"new":4,"type":"changed"},"items":[{"volume":{"old":5.0,"new":12.0,"type":"changed"},"name":{"old":"pen","new":"remote","type":"changed"}}],"open":{"old":false,"new":true,"type":"changed"}}"#;
         let diff_str = serde_json::to_string(&diff).unwrap();
