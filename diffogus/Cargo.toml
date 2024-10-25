@@ -29,7 +29,7 @@ derive = ["diffogus_derive"]
 serde = ["dep:serde", "diffogus_derive/serde"]
 
 [dependencies]
-diffogus_derive = { version = "0.1", path = "../diffogus_derive", optional = true }
+diffogus_derive = { version = "0.2", path = "../diffogus_derive", optional = true }
 serde = { version = "1", features = ["derive"], optional = true }
 
 [dev-dependencies]

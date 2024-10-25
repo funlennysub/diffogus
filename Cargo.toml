@@ -7,7 +7,7 @@ homepage = "https://github.com/funlennysub/diffogus"
 repository = "https://github.com/funlennysub/diffogus"
 
 license = "MIT"
-version = "0.1.2"
+version = "0.2.0"
 
 [workspace]
 resolver = "2"
