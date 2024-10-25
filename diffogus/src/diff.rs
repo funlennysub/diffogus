@@ -1,6 +1,6 @@
 #[cfg(feature = "serde")]
 use serde::{
-    ser::{SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant},
+    ser::{SerializeMap, SerializeSeq, SerializeStruct},
     Serialize, Serializer,
 };
 use std::collections::HashMap;
@@ -398,13 +398,15 @@ where
     {
         match self {
             OptionDiff::Removed(a) => {
-                let mut state = serializer.serialize_struct_variant("Removed", 0, "removed", 1)?;
+                let mut state = serializer.serialize_struct("Removed", 2)?;
                 state.serialize_field("old", a)?;
+                state.serialize_field("type", "removed")?;
                 state.end()
             }
             OptionDiff::Added(a) => {
-                let mut state = serializer.serialize_struct_variant("Added", 0, "added", 1)?;
+                let mut state = serializer.serialize_struct("Added", 2)?;
                 state.serialize_field("new", a)?;
+                state.serialize_field("type", "added")?;
                 state.end()
             }
             OptionDiff::Changed(a) => a.serialize(serializer),
