@@ -35,7 +35,7 @@ serde = ["dep:serde", "diffogus_derive/serde"]
 json_value = ["dep:serde_json"]
 
 [dependencies]
-diffogus_derive = { version = "0.2", path = "../diffogus_derive", optional = true }
+diffogus_derive = { version = "0.3", path = "../diffogus_derive", optional = true }
 serde = { version = "1", features = ["derive"], optional = true }
 serde_json = { version = "1", optional = true }
 
