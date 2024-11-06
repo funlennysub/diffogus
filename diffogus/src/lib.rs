@@ -150,6 +150,11 @@
 /// Core diffing implementation
 pub mod diff;
 
+/// Diffing implementation for `serde_json::Value`
+#[cfg(feature = "json_value")]
+#[cfg_attr(docsrs, doc(cfg(feature = "json_value")))]
+pub mod json_value;
+
 #[cfg(feature = "diffogus_derive")]
 extern crate diffogus_derive;
 

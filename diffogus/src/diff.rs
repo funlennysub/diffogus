@@ -297,6 +297,16 @@ where
 #[derive(Debug)]
 pub struct VecDiff<T: Diffable>(pub Vec<CollectionDiffEntry<T>>);
 
+impl<T> PartialEq for VecDiff<T>
+where
+    T: Diffable + PartialEq,
+    <T as Diffable>::Repr: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
 #[cfg(feature = "serde")]
 impl<T> Serialize for VecDiff<T>
 where
