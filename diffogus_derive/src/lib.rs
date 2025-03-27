@@ -104,7 +104,7 @@ fn generate_diffable_impl(
     })
 }
 
-// #[cfg(feature = "serde")]
+#[cfg(feature = "serde")]
 fn generate_diff_struct_serde(
     struct_name: &Ident,
     vis: &Option<Visibility>,
