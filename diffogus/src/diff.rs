@@ -1,9 +1,8 @@
 #[cfg(feature = "serde")]
-use serde::{
-    ser::{SerializeMap, SerializeSeq, SerializeStruct},
-    Serialize, Serializer,
-};
-use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
+
+use crate::MySerialize;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt::Debug;
 use std::hash::Hash;
 
@@ -21,15 +20,23 @@ pub trait Changeable {
 /// Trait representing the ability to compute a difference between two objects.
 pub trait Diffable {
     /// The type used to represent the difference between two objects.
-    type Repr: Changeable + Debug;
+    type Repr: Changeable + Debug + for<'de> MySerialize<'de>;
 
     /// Computes the difference between `self` and another object of the same type.
     fn diff(&self, b: &Self) -> Self::Repr;
 }
 
 /// Enum representing the difference between two primitive values.
-#[derive(Debug)]
-pub enum PrimitiveDiff<T: Diffable> {
+#[derive(Default, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    serde(rename_all = "lowercase", tag = "type", content = "value")
+)]
+pub enum PrimitiveDiff<T>
+where
+    T: Diffable,
+{
     /// Indicates that the value has changed, storing the old and new values.
     Changed {
         /// Field holding the old value.
@@ -38,6 +45,7 @@ pub enum PrimitiveDiff<T: Diffable> {
         new: T,
     },
     /// Indicates that the value has not changed.
+    #[default]
     Unchanged,
 }
 
@@ -63,31 +71,10 @@ where
     }
 }
 
-#[cfg(feature = "serde")]
-impl<T> Serialize for PrimitiveDiff<T>
+impl<T> Changeable for PrimitiveDiff<T>
 where
-    T: Diffable + Serialize,
+    T: Diffable,
 {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            PrimitiveDiff::Changed { old, new } => {
-                let mut state = serializer.serialize_struct("PrimitiveDiff", 3)?;
-
-                state.serialize_field("old", old)?;
-                state.serialize_field("new", new)?;
-                state.serialize_field("type", "changed")?;
-
-                state.end()
-            }
-            PrimitiveDiff::Unchanged => serializer.serialize_unit(),
-        }
-    }
-}
-
-impl<T: Diffable> Changeable for PrimitiveDiff<T> {
     fn is_changed(&self) -> bool {
         !matches!(self, Self::Unchanged)
     }
@@ -155,7 +142,12 @@ impl Diffable for String {
 }
 
 /// Enum representing a difference in collections such as `HashMap` or `Vec`.
-#[derive(Debug)]
+#[derive(Default, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    serde(rename_all = "lowercase", tag = "type", content = "value")
+)]
 pub enum CollectionDiffEntry<T: Diffable> {
     /// Indicates that an item was removed from the collection.
     Removed(T),
@@ -164,6 +156,7 @@ pub enum CollectionDiffEntry<T: Diffable> {
     /// Indicates that an item has changed.
     Changed(<T as Diffable>::Repr),
     /// Indicates that an item has not changed.
+    #[default]
     Unchanged,
 }
 
@@ -183,35 +176,6 @@ where
     }
 }
 
-#[cfg(feature = "serde")]
-impl<T> Serialize for CollectionDiffEntry<T>
-where
-    T: Diffable + Serialize,
-    <T as Diffable>::Repr: Serialize,
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            CollectionDiffEntry::Removed(a) => {
-                let mut state = serializer.serialize_struct("Removed", 2)?;
-                state.serialize_field("old", a)?;
-                state.serialize_field("type", "removed")?;
-                state.end()
-            }
-            CollectionDiffEntry::Added(a) => {
-                let mut state = serializer.serialize_struct("Added", 2)?;
-                state.serialize_field("new", a)?;
-                state.serialize_field("type", "added")?;
-                state.end()
-            }
-            CollectionDiffEntry::Changed(a) => a.serialize(serializer),
-            CollectionDiffEntry::Unchanged => serializer.serialize_unit(),
-        }
-    }
-}
-
 impl<T: Diffable> Changeable for CollectionDiffEntry<T> {
     fn is_changed(&self) -> bool {
         !matches!(self, Self::Unchanged)
@@ -219,33 +183,12 @@ impl<T: Diffable> Changeable for CollectionDiffEntry<T> {
 }
 
 /// Represents the difference between two `HashMap` collections.
-#[derive(Debug)]
+#[derive(Default, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct HashMapDiff<K, T>(pub HashMap<K, CollectionDiffEntry<T>>)
 where
     K: Hash + Eq,
     T: Diffable;
-
-#[cfg(feature = "serde")]
-impl<K, T> Serialize for HashMapDiff<K, T>
-where
-    K: Hash + Eq + Serialize,
-    T: Diffable + Serialize,
-    <T as Diffable>::Repr: Serialize,
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let len = self.0.values().filter(|v| v.is_changed()).count();
-        let mut map = serializer.serialize_map(Some(len))?;
-
-        for (k, v) in self.0.iter().filter(|(_, v)| v.is_changed()) {
-            map.serialize_entry(k, v)?;
-        }
-
-        map.end()
-    }
-}
 
 impl<K, T> Changeable for HashMapDiff<K, T>
 where
@@ -261,6 +204,8 @@ impl<K, T> Diffable for HashMap<K, T>
 where
     K: Hash + Eq + Debug + Clone,
     T: Diffable + Debug + Clone,
+    for<'de> T: MySerialize<'de>,
+    for<'de> K: MySerialize<'de>,
 {
     type Repr = HashMapDiff<K, T>;
 
@@ -293,41 +238,81 @@ where
     }
 }
 
+/// Represents the difference between two `HashMap` collections.
+#[derive(Default, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct BTreeMapDiff<K, T>(pub BTreeMap<K, CollectionDiffEntry<T>>)
+where
+    K: Hash + Eq + Ord,
+    T: Diffable;
+
+impl<K, T> Changeable for BTreeMapDiff<K, T>
+where
+    K: Hash + Eq + Ord,
+    T: Diffable,
+{
+    fn is_changed(&self) -> bool {
+        self.0.values().any(|v| v.is_changed())
+    }
+}
+
+impl<K, T> Diffable for BTreeMap<K, T>
+where
+    K: Hash + Eq + Ord + Debug + Clone,
+    T: Diffable + Debug + Clone,
+    for<'de> T: MySerialize<'de>,
+    for<'de> K: MySerialize<'de>,
+{
+    type Repr = BTreeMapDiff<K, T>;
+
+    fn diff(&self, b: &Self) -> Self::Repr {
+        let mut out = BTreeMap::new();
+
+        for (k, v) in self {
+            let other = b.get(k);
+            match other {
+                Some(other) => {
+                    let diff = v.diff(other);
+                    if diff.is_changed() {
+                        out.insert(k.clone(), CollectionDiffEntry::Changed(diff))
+                    } else {
+                        out.insert(k.clone(), CollectionDiffEntry::Unchanged)
+                    }
+                }
+                None => out.insert(k.clone(), CollectionDiffEntry::Removed(v.clone())),
+            };
+        }
+
+        for (k, v) in b {
+            if out.contains_key(k) {
+                continue;
+            }
+            out.insert(k.clone(), CollectionDiffEntry::Added(v.clone()));
+        }
+
+        BTreeMapDiff(out)
+    }
+}
+
 /// Represents the difference between two `Vec` collections.
-#[derive(Debug)]
+#[derive(Default, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct VecDiff<T: Diffable>(pub Vec<CollectionDiffEntry<T>>);
 
-impl<T> PartialEq for VecDiff<T>
+impl<'de, T> PartialEq for VecDiff<T>
 where
-    T: Diffable + PartialEq,
-    <T as Diffable>::Repr: PartialEq,
+    T: Diffable + PartialEq + MySerialize<'de>,
+    <T as Diffable>::Repr: PartialEq + MySerialize<'de>,
 {
     fn eq(&self, other: &Self) -> bool {
         self.0 == other.0
     }
 }
 
-#[cfg(feature = "serde")]
-impl<T> Serialize for VecDiff<T>
+impl<T> Changeable for VecDiff<T>
 where
-    T: Diffable + Serialize,
-    <T as Diffable>::Repr: Serialize,
+    T: Diffable + PartialEq,
 {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut seq = serializer.serialize_seq(Some(self.0.len()))?;
-
-        for e in &self.0 {
-            seq.serialize_element(e)?;
-        }
-
-        seq.end()
-    }
-}
-
-impl<T: Diffable> Changeable for VecDiff<T> {
     fn is_changed(&self) -> bool {
         self.0.iter().any(|d| d.is_changed())
     }
@@ -335,7 +320,8 @@ impl<T: Diffable> Changeable for VecDiff<T> {
 
 impl<T> Diffable for Vec<T>
 where
-    T: Diffable + Debug + Clone,
+    T: Diffable + Debug + Clone + PartialEq,
+    for<'de> T: MySerialize<'de>,
 {
     type Repr = VecDiff<T>;
 
@@ -368,7 +354,12 @@ where
 }
 
 /// Enum representing the difference between two `Option` values.
-#[derive(Debug)]
+#[derive(Default, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    serde(rename_all = "lowercase", tag = "type", content = "value")
+)]
 pub enum OptionDiff<T: Diffable> {
     /// Indicates that a value was removed (i.e., `Some` became `None`).
     Removed(T),
@@ -377,6 +368,7 @@ pub enum OptionDiff<T: Diffable> {
     /// Indicates that the inner value of `Some` has changed.
     Changed(<T as Diffable>::Repr),
     /// Indicates that the value has not changed.
+    #[default]
     Unchanged,
 }
 
@@ -396,35 +388,6 @@ where
     }
 }
 
-#[cfg(feature = "serde")]
-impl<T> Serialize for OptionDiff<T>
-where
-    T: Diffable + Serialize,
-    <T as Diffable>::Repr: Serialize,
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            OptionDiff::Removed(a) => {
-                let mut state = serializer.serialize_struct("Removed", 2)?;
-                state.serialize_field("old", a)?;
-                state.serialize_field("type", "removed")?;
-                state.end()
-            }
-            OptionDiff::Added(a) => {
-                let mut state = serializer.serialize_struct("Added", 2)?;
-                state.serialize_field("new", a)?;
-                state.serialize_field("type", "added")?;
-                state.end()
-            }
-            OptionDiff::Changed(a) => a.serialize(serializer),
-            OptionDiff::Unchanged => serializer.serialize_unit(),
-        }
-    }
-}
-
 impl<T: Diffable> Changeable for OptionDiff<T> {
     fn is_changed(&self) -> bool {
         !matches!(self, Self::Unchanged)
@@ -434,6 +397,7 @@ impl<T: Diffable> Changeable for OptionDiff<T> {
 impl<T> Diffable for Option<T>
 where
     T: Diffable + Clone + Debug,
+    for<'de> T: MySerialize<'de>,
 {
     type Repr = OptionDiff<T>;
 

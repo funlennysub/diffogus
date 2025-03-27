@@ -68,13 +68,13 @@
 //! use std::collections::HashMap;
 //!
 //! let mut map1 = HashMap::new();
-//! map1.insert("key1", 1);
-//! map1.insert("key2", 2);
+//! map1.insert("key1".to_string(), 1);
+//! map1.insert("key2".to_string(), 2);
 //!
 //! let mut map2 = HashMap::new();
-//! map2.insert("key1", 1);
-//! map2.insert("key2", 3);
-//! map2.insert("key3", 4);
+//! map2.insert("key1".to_string(), 1);
+//! map2.insert("key2".to_string(), 3);
+//! map2.insert("key3".to_string(), 4);
 //!
 //! let diff = map1.diff(&map2);
 //!
@@ -105,10 +105,10 @@
 //! use std::collections::HashMap;
 //!
 //! let mut map1 = HashMap::new();
-//! map1.insert("key1", 1);
+//! map1.insert("key1".to_string(), 1);
 //!
 //! let mut map2 = HashMap::new();
-//! map2.insert("key1", 2);
+//! map2.insert("key1".to_string(), 2);
 //!
 //! let diff = map1.diff(&map2);
 //! let serialized = serde_json::to_string(&diff).unwrap();
@@ -147,6 +147,20 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg, rustdoc_internals))]
 
+/// Custom trait to allow for conditional serde support
+#[cfg(feature = "serde")]
+pub trait MySerialize<'de>: Serialize + Deserialize<'de> {}
+
+/// Custom trait to allow for conditional serde support
+#[cfg(not(feature = "serde"))]
+pub trait MySerialize<'de> {}
+
+#[cfg(feature = "serde")]
+impl<'de, T> MySerialize<'de> for T where T: Serialize + Deserialize<'de> {}
+
+#[cfg(not(feature = "serde"))]
+impl<T> MySerialize<'_> for T {}
+
 /// Core diffing implementation
 pub mod diff;
 
@@ -161,3 +175,6 @@ extern crate diffogus_derive;
 #[cfg(feature = "diffogus_derive")]
 #[cfg_attr(docsrs, doc(cfg(feature = "derive")))]
 pub use diffogus_derive::Diff;
+
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};

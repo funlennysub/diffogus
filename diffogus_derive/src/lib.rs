@@ -104,7 +104,7 @@ fn generate_diffable_impl(
     })
 }
 
-#[cfg(feature = "serde")]
+// #[cfg(feature = "serde")]
 fn generate_diff_struct_serde(
     struct_name: &Ident,
     vis: &Option<Visibility>,
@@ -119,12 +119,12 @@ fn generate_diff_struct_serde(
                 "<<{} as ::diffogus::diff::Diffable>::Repr as ::diffogus::diff::Changeable>::is_unchanged",
                 &f.ty.to_token_stream()
             );
-            quote! { #[serde(skip_serializing_if = #ty)] }
+            quote! { #[serde(default, skip_serializing_if = #ty)] }
         })
         .collect();
 
     Ok(quote! {
-        #[derive(Debug, serde::Serialize)]
+        #[derive(Default, Debug, serde::Serialize, serde::Deserialize)]
         #vis struct #struct_name {
             #(
                 #skips
@@ -142,7 +142,7 @@ fn generate_diff_struct(
     types: &Vec<&Type>,
 ) -> syn::Result<TokenStream2> {
     Ok(quote! {
-        #[derive(Debug)]
+        #[derive(Default, Debug)]
         #vis struct #struct_name {
             #(
                 #vis #names: <#types as ::diffogus::diff::Diffable>::Repr

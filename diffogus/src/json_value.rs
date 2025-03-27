@@ -12,31 +12,13 @@
 //!
 
 use crate::diff::{Changeable, CollectionDiffEntry, Diffable, PrimitiveDiff, VecDiff};
-use serde::ser::{SerializeMap, SerializeSeq, SerializeStruct};
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Number, Value};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 /// Represents the difference between two [`Map`] collections.
-#[derive(Debug)]
-pub struct ValueMapDiff(pub HashMap<String, CollectionDiffEntry<Value>>);
-
-#[cfg(feature = "serde")]
-impl Serialize for ValueMapDiff {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let len = self.0.values().filter(|v| v.is_changed()).count();
-        let mut map = serializer.serialize_map(Some(len))?;
-
-        for (k, v) in self.0.iter().filter(|(_, v)| v.is_changed()) {
-            map.serialize_entry(k, v)?;
-        }
-
-        map.end()
-    }
-}
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ValueMapDiff(pub BTreeMap<String, CollectionDiffEntry<Value>>);
 
 impl PartialEq for ValueMapDiff {
     fn eq(&self, other: &Self) -> bool {
@@ -54,7 +36,7 @@ impl Diffable for Map<String, Value> {
     type Repr = ValueMapDiff;
 
     fn diff(&self, b: &Self) -> Self::Repr {
-        let mut out = HashMap::new();
+        let mut out = BTreeMap::new();
 
         for (k, v) in self {
             let other = b.get(k);
@@ -83,7 +65,8 @@ impl Diffable for Map<String, Value> {
 }
 
 /// Enum representing a difference between two [`Value`]
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "type", content = "value")]
 pub enum ValueDiff {
     /// Indicates that the value has not changed.
     Unchanged,
@@ -119,73 +102,6 @@ pub enum ValueDiff {
     ArrayChanged(VecDiff<Value>),
     /// Indicates that [`Value::Object`] values have changed.
     ObjectChanged(ValueMapDiff),
-}
-
-#[cfg(feature = "serde")]
-impl Serialize for ValueDiff {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            ValueDiff::Unchanged => serializer.serialize_unit(),
-            ValueDiff::VariantChanged { old, new } => {
-                let mut state = serializer.serialize_struct("ValueDiff", 3)?;
-
-                state.serialize_field("old", old)?;
-                state.serialize_field("new", new)?;
-                state.serialize_field("type", "variant_changed")?;
-
-                state.end()
-            }
-            ValueDiff::BoolChanged { old, new } => {
-                let mut state = serializer.serialize_struct("ValueDiff", 3)?;
-
-                state.serialize_field("old", old)?;
-                state.serialize_field("new", new)?;
-                state.serialize_field("type", "bool_changed")?;
-
-                state.end()
-            }
-            ValueDiff::StringChanged { old, new } => {
-                let mut state = serializer.serialize_struct("ValueDiff", 3)?;
-
-                state.serialize_field("old", old)?;
-                state.serialize_field("new", new)?;
-                state.serialize_field("type", "string_changed")?;
-
-                state.end()
-            }
-            ValueDiff::NumberChanged { old, new } => {
-                let mut state = serializer.serialize_struct("ValueDiff", 3)?;
-
-                state.serialize_field("old", old)?;
-                state.serialize_field("new", new)?;
-                state.serialize_field("type", "number_changed")?;
-
-                state.end()
-            }
-            ValueDiff::ArrayChanged(diff) => {
-                let mut state = serializer.serialize_seq(Some(diff.0.len()))?;
-
-                for e in &diff.0 {
-                    state.serialize_element(e)?;
-                }
-
-                state.end()
-            }
-            ValueDiff::ObjectChanged(diff) => {
-                let len = diff.0.values().filter(|v| v.is_changed()).count();
-                let mut map = serializer.serialize_map(Some(len))?;
-
-                for (k, v) in diff.0.iter().filter(|(_, v)| v.is_changed()) {
-                    map.serialize_entry(k, v)?;
-                }
-
-                map.end()
-            }
-        }
-    }
 }
 
 impl PartialEq for ValueDiff {

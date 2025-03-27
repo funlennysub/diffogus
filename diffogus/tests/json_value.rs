@@ -88,13 +88,14 @@ mod test {
         let a = json!(null);
         let b = json!(null);
         let diff = a.diff(&b);
-        let expected = r#"null"#;
+        let expected = r#"{"type":"unchanged"}"#;
         assert_eq!(expected, serde_json::to_string(&diff).unwrap());
 
         let a = json!("Hello World!");
         let b = json!("Hello World");
         let diff = a.diff(&b);
-        let expected = r#"{"old":"Hello World!","new":"Hello World","type":"string_changed"}"#;
+        let expected =
+            r#"{"type":"string_changed","value":{"old":"Hello World!","new":"Hello World"}}"#;
         assert_eq!(expected, serde_json::to_string(&diff).unwrap());
 
         let a = json!({
@@ -106,7 +107,7 @@ mod test {
             "name": "box"
         });
         let diff = a.diff(&b);
-        let expected = r#"{"size":{"old":10,"new":11,"type":"number_changed"}}"#;
+        let expected = r#"{"type":"object_changed","value":{"name":{"type":"unchanged"},"size":{"type":"changed","value":{"type":"number_changed","value":{"old":10,"new":11}}}}}"#;
         assert_eq!(expected, serde_json::to_string(&diff).unwrap());
 
         let a = json!({
@@ -116,7 +117,7 @@ mod test {
             "arr": [2, 2, 3]
         });
         let diff = a.diff(&b);
-        let expected = r#"{"arr":[{"old":1,"new":2,"type":"number_changed"},null,null]}"#;
+        let expected = r#"{"type":"object_changed","value":{"arr":{"type":"changed","value":{"type":"array_changed","value":[{"type":"changed","value":{"type":"number_changed","value":{"old":1,"new":2}}},{"type":"unchanged"},{"type":"unchanged"}]}}}}"#;
         assert_eq!(expected, serde_json::to_string(&diff).unwrap());
 
         let a = json!({
@@ -130,7 +131,7 @@ mod test {
             }
         });
         let diff = a.diff(&b);
-        let expected = r#"{"nested":{"deep":{"old":true,"new":"very","type":"variant_changed"}}}"#;
+        let expected = r#"{"type":"object_changed","value":{"nested":{"type":"changed","value":{"type":"object_changed","value":{"deep":{"type":"changed","value":{"type":"variant_changed","value":{"old":true,"new":"very"}}}}}}}}"#;
         assert_eq!(expected, serde_json::to_string(&diff).unwrap());
     }
 }

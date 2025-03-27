@@ -98,13 +98,13 @@ mod tests {
     #[test]
     fn test_hashmap_diff() {
         let mut a = HashMap::new();
-        a.insert("key1", 1);
-        a.insert("key2", 2);
+        a.insert("key1".to_string(), 1);
+        a.insert("key2".to_string(), 2);
 
         let mut b = HashMap::new();
-        b.insert("key1", 1); // unchanged
-        b.insert("key2", 3); // changed
-        b.insert("key3", 4); // added
+        b.insert("key1".to_string(), 1); // unchanged
+        b.insert("key2".to_string(), 3); // changed
+        b.insert("key3".to_string(), 4); // added
 
         let diff = a.diff(&b);
         assert!(diff.is_changed());
